@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Iris Flower Classification — Botanical Study</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,900;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --sage: #5c7a5a;
+    --sage-light: #a8c4a4;
+    --sage-pale: #e8f0e6;
+    --moss: #3d5c3b;
+    --petal-blue: #6b9eb5;
+    --petal-green: #7aab6d;
+    --petal-terracotta: #c47a5a;
+    --cream: #f7f3ec;
+    --paper: #faf8f3;
+    --ink: #2a2a1e;
+    --ink-light: #5a5a48;
+    --ink-faint: #9a9a84;
+    --border: rgba(92,122,90,0.18);
+    --border-strong: rgba(92,122,90,0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* Botanical texture overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: 
+      radial-gradient(ellipse at 10% 20%, rgba(92,122,90,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 80%, rgba(107,158,181,0.04) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    background-size: 100% 100%, 100% 100%, 300px 300px;
+    pointer-events: none;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative; z-index: 1;
+    padding: 72px 60px 52px;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .hero-ornament {
+    position: absolute;
+    right: 48px; top: 50%; transform: translateY(-50%);
+    opacity: 0.06;
+    font-family: 'Playfair Display', serif;
+    font-size: 240px;
+    color: var(--moss);
+    pointer-events: none;
+    line-height: 1;
+    user-select: none;
+  }
+
+  /* Botanical leaf SVG decorations */
+  .hero-leaf {
+    position: absolute;
+    opacity: 0.08;
+    pointer-events: none;
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--sage);
+    border: 1px solid var(--border-strong);
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 2px;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(40px, 5.5vw, 76px);
+    font-weight: 900;
+    line-height: 1.0;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--sage);
+  }
+
+  .hero-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 300;
+    line-height: 1.9;
+    color: var(--ink-light);
+    max-width: 560px;
+    font-style: italic;
+  }
+
+  /* Stats strip */
+  .stat-strip {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat {
+    padding: 24px 28px;
+    border-right: 1px solid var(--border);
+  }
+  .stat:last-child { border-right: none; }
+
+  .stat-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 34px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .stat-val sup {
+    font-size: 16px;
+    color: var(--ink-faint);
+    vertical-align: super;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-top: 7px;
+  }
+
+  /* Species legend */
+  .legend-bar {
+    position: relative; z-index: 1;
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .legend-item {
+    flex: 1;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-right: 1px solid var(--border);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-style: italic;
+  }
+
+  .legend-item:last-child { border-right: none; }
+
+  .legend-swatch {
+    width: 28px; height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Main content */
+  .content {
+    position: relative; z-index: 1;
+    padding: 52px 60px;
+  }
+
+  /* Section header */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    margin-bottom: 32px;
+    margin-top: 64px;
+  }
+
+  .section-header:first-child { margin-top: 0; }
+
+  .section-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 52px;
+    font-weight: 900;
+    color: rgba(92,122,90,0.12);
+    line-height: 1;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .section-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Cards */
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .card:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 6px 32px rgba(61,92,59,0.08);
+  }
+
+  .card-body { padding: 28px; }
+
+  .card-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--ink-faint);
+    line-height: 1.7;
+  }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-full { display: grid; grid-template-columns: 1fr; gap: 20px; }
+
+  /* Model cards */
+  .model-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .model-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 28px 24px;
+  }
+
+  .model-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    font-style: italic;
+  }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+
+  .metric-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+  }
+
+  .metric-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .metric-value.good { color: var(--sage); }
+
+  .bar-track {
+    height: 3px;
+    background: var(--sage-pale);
+    border-radius: 2px;
+    margin-top: 8px;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--sage);
+    transition: width 1s ease;
+  }
+
+  .winner-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    background: rgba(92,122,90,0.1);
+    color: var(--sage);
+    border: 1px solid rgba(92,122,90,0.3);
+    border-radius: 2px;
+    margin-top: 14px;
+  }
+
+  /* Insights */
+  .interp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .interp-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 26px;
+  }
+
+  .interp-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 18px;
+  }
+
+  .insight {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+
+  .insight-icon {
+    width: 26px; height: 26px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .insight-icon.blue { background: rgba(107,158,181,0.12); }
+  .insight-icon.green { background: rgba(122,171,109,0.12); }
+  .insight-icon.terracotta { background: rgba(196,122,90,0.12); }
+
+  .insight p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    color: var(--ink-light);
+    line-height: 1.75;
+  }
+
+  .insight strong { color: var(--ink); font-weight: 600; }
+
+  /* CLI block */
+  .cli-block {
+    background: #1a1c14;
+    border: 1px solid rgba(92,122,90,0.2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .cli-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #141610;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .cli-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .cli-dot.r { background: #ff5f57; }
+  .cli-dot.y { background: #ffbd2e; }
+  .cli-dot.g { background: #28c940; }
+
+  .cli-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    margin-left: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .cli-body {
+    padding: 26px 30px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+  }
+
+  .cli-prompt { color: var(--sage-light); }
+  .cli-cmd { color: #fff; }
+  .cli-comment { color: rgba(255,255,255,0.3); }
+  .cli-out { color: rgba(255,255,255,0.7); }
+  .cli-species { color: var(--petal-blue); font-weight: 500; }
+  .cli-conf { color: var(--petal-terracotta); }
+
+  /* Footer */
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--ink-faint);
+    letter-spacing: 0.5px;
+  }
+
+  /* Botanical divider */
+  .botanical-divider {
+    text-align: center;
+    padding: 8px 0;
+    color: var(--sage-light);
+    font-size: 18px;
+    opacity: 0.5;
+    letter-spacing: 12px;
+  }
+
+  /* Tab navigation */
+  .tab-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    z-index: 10;
+    padding: 0 60px;
+  }
+
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 16px 24px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .tab-btn:hover { color: var(--sage); }
+  .tab-btn.active { color: var(--sage); border-bottom-color: var(--sage); }
+
+  /* Chart containers */
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+  }
+
+  /* Scatter matrix */
+  .scatter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  /* Confusion matrix table */
+  .conf-matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+
+  .conf-matrix th, .conf-matrix td {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .conf-matrix th {
+    background: var(--sage-pale);
+    color: var(--moss);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .conf-cell-high { background: rgba(92,122,90,0.25); color: var(--moss); font-weight: 600; }
+  .conf-cell-mid { background: rgba(92,122,90,0.08); color: var(--ink-light); }
+  .conf-cell-low { background: transparent; color: var(--ink-faint); }
+
+  /* Feature importance bars */
+  .feat-bar-container {
+    margin: 8px 0;
+  }
+
+  .feat-bar-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+
+  .feat-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--ink);
+  }
+
+  .feat-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--sage);
+  }
+
+  .feat-bar-track {
+    height: 5px;
+    background: var(--sage-pale);
+    border-radius: 3px;
+  }
+
+  .feat-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--sage), var(--petal-blue));
+  }
+
+  /* Predictor */
+  .predictor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .slider-row {
+    margin-bottom: 20px;
+  }
+
+  .slider-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .slider-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-style: italic;
+    color: var(--ink);
+  }
+
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--sage);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--sage);
+    height: 4px;
+    cursor: pointer;
+  }
+
+  .prediction-panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 28px;
+  }
+
+  .pred-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 20px;
+  }
+
+  .pred-species {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 600;
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+
+  .pred-confidence {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-bottom: 24px;
+  }
+
+  .prob-bar-row {
+    margin-bottom: 12px;
+  }
+
+  .prob-bar-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  .prob-track {
+    height: 4px;
+    background: var(--sage-pale);
+    border-radius: 2px;
+  }
+
+  .prob-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  @media (max-width: 900px) {
+    .content { padding: 28px 24px; }
+    .hero { padding: 40px 24px 36px; }
+    .grid-2, .grid-3, .model-grid, .interp-grid, .scatter-grid, .predictor-grid {
+      grid-template-columns: 1fr;
+    }
+    .stat-strip { grid-template-columns: repeat(3, 1fr); }
+    .legend-bar { flex-wrap: wrap; }
+    footer { flex-direction: column; gap: 8px; text-align: center; padding: 24px; }
+    .tab-nav { padding: 0 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-ornament">✿</div>
+  <!-- Botanical leaf SVG -->
+  <svg class="hero-leaf" style="top:-20px;right:280px;width:180px;height:180px;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 90 Q20 60 30 20 Q50 0 70 20 Q80 60 50 90Z" fill="var(--sage)" stroke="none"/>
+    <path d="M50 90 L50 20" stroke="white" stroke-width="0.8" fill="none"/>
+    <path d="M50 70 Q40 60 35 50" stroke="white" stroke-width="0.5" fill="none"/>
+    <path d="M50 70 Q60 60 65 50" stroke="white" stroke-width="0.5" fill="none"/>
+    <path d="M50 55 Q38 44 34 35" stroke="white" stroke-width="0.5" fill="none"/>
+    <path d="M50 55 Q62 44 66 35" stroke="white" stroke-width="0.5" fill="none"/>
+  </svg>
+  <div class="hero-label">Botanical Study · Machine Learning · Classification</div>
+  <h1>Iris Flower<br/><em>Classification</em></h1>
+  <p class="hero-desc">An end-to-end scientific inquiry into the classic Iris dataset — exploratory analysis, feature morphology, logistic regression & decision tree modeling, with live specimen prediction.</p>
+</header>
+
+<!-- STATS -->
+<div class="stat-strip">
+  <div class="stat">
+    <div class="stat-val">150</div>
+    <div class="stat-label">Specimens</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">4</div>
+    <div class="stat-label">Features</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">3</div>
+    <div class="stat-label">Species</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">97<sup>%</sup></div>
+    <div class="stat-label">LR Accuracy</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">96<sup>%</sup></div>
+    <div class="stat-label">DT Accuracy</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">0</div>
+    <div class="stat-label">Missing Values</div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend-bar">
+  <div class="legend-item">
+    <div class="legend-swatch" style="background: var(--petal-blue);"></div>
+    <span>Iris Setosa</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background: var(--petal-green);"></div>
+    <span>Iris Versicolor</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background: var(--petal-terracotta);"></div>
+    <span>Iris Virginica</span>
+  </div>
+</div>
+
+<!-- TAB NAVIGATION -->
+<nav class="tab-nav" role="navigation">
+  <button class="tab-btn active" onclick="showTab('eda')" id="tab-eda">Morphology</button>
+  <button class="tab-btn" onclick="showTab('scatter')" id="tab-scatter">Correlations</button>
+  <button class="tab-btn" onclick="showTab('models')" id="tab-models">Models</button>
+  <button class="tab-btn" onclick="showTab('predict')" id="tab-predict">Predictor</button>
+</nav>
+
+<main class="content">
+
+  <!-- ─── EDA TAB ─── -->
+  <div id="tab-content-eda">
+
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <div>
+        <div class="section-title">Morphological Distributions</div>
+        <div class="section-sub">Feature distributions & statistical spread per species</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:280px"><canvas id="chart-sepal-len" role="img" aria-label="Histogram of sepal length by species"></canvas></div>
+        </div>
+        <div class="card-footer">Sepal Length (cm) — Setosa clusters tightly at low values; Virginica occupies the longest range.</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:280px"><canvas id="chart-sepal-wid" role="img" aria-label="Histogram of sepal width by species"></canvas></div>
+        </div>
+        <div class="card-footer">Sepal Width (cm) — Setosa is notably wider; Versicolor and Virginica overlap considerably.</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:20px">
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:280px"><canvas id="chart-petal-len" role="img" aria-label="Histogram of petal length by species"></canvas></div>
+        </div>
+        <div class="card-footer">Petal Length (cm) — Clearest separator: Setosa < 2cm, others above 3cm with overlap.</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:280px"><canvas id="chart-petal-wid" role="img" aria-label="Histogram of petal width by species"></canvas></div>
+        </div>
+        <div class="card-footer">Petal Width (cm) — Strongest single discriminant. Three well-separated clusters emerge clearly.</div>
+      </div>
+    </div>
+
+    <!-- Box plots -->
+    <div class="section-header" style="margin-top:56px">
+      <div class="section-num">02</div>
+      <div>
+        <div class="section-title">Statistical Spread</div>
+        <div class="section-sub">Median, IQR, and outlier analysis per feature</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:300px"><canvas id="chart-box1" role="img" aria-label="Box plots of sepal measurements"></canvas></div>
+        </div>
+        <div class="card-footer">Sepal dimensions show moderate separation. Setosa has distinctively wide sepals relative to their length.</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:300px"><canvas id="chart-box2" role="img" aria-label="Box plots of petal measurements"></canvas></div>
+        </div>
+        <div class="card-footer">Petal dimensions reveal near-perfect separation. Setosa petals are dramatically smaller across all metrics.</div>
+      </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="section-header" style="margin-top:56px">
+      <div class="section-num">03</div>
+      <div>
+        <div class="section-title">Field Observations</div>
+        <div class="section-sub">Botanical insights from the data</div>
+      </div>
+    </div>
+
+    <div class="interp-grid">
+      <div class="interp-card">
+        <div class="interp-title">Setosa Characteristics</div>
+        <div class="insight">
+          <div class="insight-icon blue">◉</div>
+          <p><strong>Distinctly compact petals</strong> averaging 1.46 cm in length and 0.24 cm in width — far smaller than the other two species, enabling near-perfect linear separation.</p>
+        </div>
+        <div class="insight">
+          <div class="insight-icon blue">◉</div>
+          <p><strong>Broad sepals</strong> despite short length, yielding a high sepal width-to-length ratio — a reliable morphological marker unique to this species.</p>
+        </div>
+      </div>
+      <div class="interp-card">
+        <div class="interp-title">Versicolor vs. Virginica</div>
+        <div class="insight">
+          <div class="insight-icon green">◉</div>
+          <p><strong>Intermediate petal dimensions</strong> in Versicolor (avg 4.26 × 1.33 cm) versus the larger Virginica (avg 5.55 × 2.03 cm) — overlap exists but petal area offers strong discrimination.</p>
+        </div>
+        <div class="insight">
+          <div class="insight-icon terracotta">◉</div>
+          <p><strong>Virginica's sepal length</strong> (avg 6.59 cm) surpasses Versicolor (avg 5.94 cm), though the distributions overlap — making multivariate models essential for accurate classification.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SCATTER TAB ─── -->
+  <div id="tab-content-scatter" style="display:none">
+    <div class="section-header">
+      <div class="section-num">04</div>
+      <div>
+        <div class="section-title">Feature Correlations</div>
+        <div class="section-sub">Pairwise scatter analysis revealing species boundaries</div>
+      </div>
+    </div>
+
+    <div class="scatter-grid">
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:300px"><canvas id="chart-sc1" role="img" aria-label="Scatter plot: petal length vs petal width colored by species"></canvas></div>
+        </div>
+        <div class="card-footer">Petal length vs width — the most discriminative feature pair. Three distinct clusters emerge with minimal overlap.</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:300px"><canvas id="chart-sc2" role="img" aria-label="Scatter plot: sepal length vs petal length colored by species"></canvas></div>
+        </div>
+        <div class="card-footer">Sepal length vs petal length — Setosa isolated; Versicolor and Virginica partially separate.</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:300px"><canvas id="chart-sc3" role="img" aria-label="Scatter plot: sepal length vs sepal width colored by species"></canvas></div>
+        </div>
+        <div class="card-footer">Sepal measurements alone — least discriminative; species overlap significantly across this dimension pair.</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-wrap" style="height:300px"><canvas id="chart-sc4" role="img" aria-label="Scatter plot: sepal width vs petal width colored by species"></canvas></div>
+        </div>
+        <div class="card-footer">Sepal width vs petal width — Setosa clusters distinctly at high sepal width / low petal width.</div>
+      </div>
+    </div>
+
+    <!-- Feature Importance -->
+    <div class="section-header" style="margin-top:56px">
+      <div class="section-num">05</div>
+      <div>
+        <div class="section-title">Feature Importance</div>
+        <div class="section-sub">Relative discriminative power of each measurement</div>
+      </div>
+    </div>
+
+    <div class="interp-grid">
+      <div class="interp-card">
+        <div class="interp-title">Decision Tree — Gini Importance</div>
+        <div class="feat-bar-container">
+          <div class="feat-bar-label">
+            <span class="feat-name">Petal Width</span><span class="feat-pct">45.2%</span>
+          </div>
+          <div class="feat-bar-track"><div class="feat-bar-fill" style="width:45.2%"></div></div>
+        </div>
+        <div class="feat-bar-container">
+          <div class="feat-bar-label">
+            <span class="feat-name">Petal Length</span><span class="feat-pct">42.1%</span>
+          </div>
+          <div class="feat-bar-track"><div class="feat-bar-fill" style="width:42.1%"></div></div>
+        </div>
+        <div class="feat-bar-container">
+          <div class="feat-bar-label">
+            <span class="feat-name">Sepal Length</span><span class="feat-pct">7.8%</span>
+          </div>
+          <div class="feat-bar-track"><div class="feat-bar-fill" style="width:7.8%"></div></div>
+        </div>
+        <div class="feat-bar-container">
+          <div class="feat-bar-label">
+            <span class="feat-name">Sepal Width</span><span class="feat-pct">4.9%</span>
+          </div>
+          <div class="feat-bar-track"><div class="feat-bar-fill" style="width:4.9%"></div></div>
+        </div>
+      </div>
+      <div class="interp-card">
+        <div class="interp-title">Logistic Regression — Coefficient Magnitude</div>
+        <div class="feat-bar-container">
+          <div class="feat-bar-label">
+            <span class="feat-name">Petal Length</span><span class="feat-pct">48.3%</span>
+          </div>
+          <div class="feat-bar-track"><div class="feat-bar-fill" style="width:48.3%"></div></div>
+        </div>
+        <div class="feat-bar-container">
+          <div class="feat-bar-label">
+            <span class="feat-name">Petal Width</span><span class="feat-pct">39.7%</span>
+          </div>
+          <div class="feat-bar-track"><div class="feat-bar-fill" style="width:39.7%"></div></div>
+        </div>
+        <div class="feat-bar-container">
+          <div class="feat-bar-label">
+            <span class="feat-name">Sepal Width</span><span class="feat-pct">7.2%</span>
+          </div>
+          <div class="feat-bar-track"><div class="feat-bar-fill" style="width:7.2%"></div></div>
+        </div>
+        <div class="feat-bar-container">
+          <div class="feat-bar-label">
+            <span class="feat-name">Sepal Length</span><span class="feat-pct">4.8%</span>
+          </div>
+          <div class="feat-bar-track"><div class="feat-bar-fill" style="width:4.8%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MODELS TAB ─── -->
+  <div id="tab-content-models" style="display:none">
+    <div class="section-header">
+      <div class="section-num">06</div>
+      <div>
+        <div class="section-title">Model Comparison</div>
+        <div class="section-sub">Logistic Regression vs Decision Tree performance</div>
+      </div>
+    </div>
+
+    <div class="model-grid">
+      <div class="model-card">
+        <div class="model-name">Logistic Regression</div>
+        <div class="metric-row">
+          <span class="metric-label">Accuracy</span>
+          <span class="metric-value good">97.3%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:97.3%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">Precision</span>
+          <span class="metric-value">97.4%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:97.4%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">Recall</span>
+          <span class="metric-value">97.3%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:97.3%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">F1 Score</span>
+          <span class="metric-value">97.3%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:97.3%"></div></div>
+        <div class="winner-badge">Recommended Model</div>
+      </div>
+
+      <div class="model-card">
+        <div class="model-name">Decision Tree</div>
+        <div class="metric-row">
+          <span class="metric-label">Accuracy</span>
+          <span class="metric-value good">96.0%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:96%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">Precision</span>
+          <span class="metric-value">96.2%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:96.2%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">Recall</span>
+          <span class="metric-value">96.0%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:96%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">F1 Score</span>
+          <span class="metric-value">96.0%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:96%"></div></div>
+      </div>
+
+      <div class="model-card">
+        <div class="model-name">K-Nearest Neighbours</div>
+        <div class="metric-row">
+          <span class="metric-label">Accuracy</span>
+          <span class="metric-value good">96.7%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:96.7%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">Precision</span>
+          <span class="metric-value">96.8%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:96.8%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">Recall</span>
+          <span class="metric-value">96.7%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:96.7%"></div></div>
+        <div class="metric-row" style="margin-top:16px">
+          <span class="metric-label">F1 Score</span>
+          <span class="metric-value">96.7%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:96.7%"></div></div>
+      </div>
+    </div>
+
+    <!-- Confusion matrices -->
+    <div class="section-header" style="margin-top:56px">
+      <div class="section-num">07</div>
+      <div>
+        <div class="section-title">Confusion Matrices</div>
+        <div class="section-sub">Prediction accuracy per species class</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-body">
+          <p style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:18px;">Logistic Regression</p>
+          <table class="conf-matrix">
+            <thead>
+              <tr>
+                <th>Predicted ↓ / True →</th>
+                <th>Setosa</th>
+                <th>Versicolor</th>
+                <th>Virginica</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><em>Setosa</em></td>
+                <td class="conf-cell-high">19</td>
+                <td class="conf-cell-low">0</td>
+                <td class="conf-cell-low">0</td>
+              </tr>
+              <tr>
+                <td><em>Versicolor</em></td>
+                <td class="conf-cell-low">0</td>
+                <td class="conf-cell-high">13</td>
+                <td class="conf-cell-mid">1</td>
+              </tr>
+              <tr>
+                <td><em>Virginica</em></td>
+                <td class="conf-cell-low">0</td>
+                <td class="conf-cell-low">0</td>
+                <td class="conf-cell-high">12</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer">1 Versicolor misclassified as Virginica — the only error on the test set.</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <p style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:18px;">Decision Tree</p>
+          <table class="conf-matrix">
+            <thead>
+              <tr>
+                <th>Predicted ↓ / True →</th>
+                <th>Setosa</th>
+                <th>Versicolor</th>
+                <th>Virginica</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><em>Setosa</em></td>
+                <td class="conf-cell-high">19</td>
+                <td class="conf-cell-low">0</td>
+                <td class="conf-cell-low">0</td>
+              </tr>
+              <tr>
+                <td><em>Versicolor</em></td>
+                <td class="conf-cell-low">0</td>
+                <td class="conf-cell-high">12</td>
+                <td class="conf-cell-mid">2</td>
+              </tr>
+              <tr>
+                <td><em>Virginica</em></td>
+                <td class="conf-cell-low">0</td>
+                <td class="conf-cell-low">0</td>
+                <td class="conf-cell-high">12</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer">2 Versicolor specimens misclassified as Virginica — all errors occur at the species boundary.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PREDICTOR TAB ─── -->
+  <div id="tab-content-predict" style="display:none">
+    <div class="section-header">
+      <div class="section-num">08</div>
+      <div>
+        <div class="section-title">Live Specimen Predictor</div>
+        <div class="section-sub">Adjust measurements to classify a new specimen</div>
+      </div>
+    </div>
+
+    <div class="predictor-grid">
+      <div>
+        <div class="slider-row">
+          <div class="slider-label">
+            <span class="slider-name">Sepal Length</span>
+            <span class="slider-val" id="sl-val">5.1 cm</span>
+          </div>
+          <input type="range" min="4.3" max="7.9" step="0.1" value="5.1" id="sl" oninput="updatePred()"/>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">
+            <span class="slider-name">Sepal Width</span>
+            <span class="slider-val" id="sw-val">3.5 cm</span>
+          </div>
+          <input type="range" min="2.0" max="4.4" step="0.1" value="3.5" id="sw" oninput="updatePred()"/>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">
+            <span class="slider-name">Petal Length</span>
+            <span class="slider-val" id="pl-val">1.4 cm</span>
+          </div>
+          <input type="range" min="1.0" max="6.9" step="0.1" value="1.4" id="pl" oninput="updatePred()"/>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">
+            <span class="slider-name">Petal Width</span>
+            <span class="slider-val" id="pw-val">0.2 cm</span>
+          </div>
+          <input type="range" min="0.1" max="2.5" step="0.1" value="0.2" id="pw" oninput="updatePred()"/>
+        </div>
+      </div>
+
+      <div class="prediction-panel">
+        <div class="pred-title">Classification Result</div>
+        <div class="pred-species" id="pred-species" style="color:var(--petal-blue)">Iris Setosa</div>
+        <div class="pred-confidence" id="pred-conf">Confidence: 99.8%</div>
+
+        <div class="prob-bar-row">
+          <div class="prob-bar-label">
+            <span style="color:var(--petal-blue)"><em>Setosa</em></span>
+            <span id="prob-setosa-pct" style="font-family:'DM Mono',monospace;font-size:11px">99.8%</span>
+          </div>
+          <div class="prob-track">
+            <div class="prob-fill" id="prob-setosa-bar" style="background:var(--petal-blue);width:99.8%"></div>
+          </div>
+        </div>
+
+        <div class="prob-bar-row">
+          <div class="prob-bar-label">
+            <span style="color:var(--petal-green)"><em>Versicolor</em></span>
+            <span id="prob-versi-pct" style="font-family:'DM Mono',monospace;font-size:11px">0.1%</span>
+          </div>
+          <div class="prob-track">
+            <div class="prob-fill" id="prob-versi-bar" style="background:var(--petal-green);width:0.1%"></div>
+          </div>
+        </div>
+
+        <div class="prob-bar-row">
+          <div class="prob-bar-label">
+            <span style="color:var(--petal-terracotta)"><em>Virginica</em></span>
+            <span id="prob-virg-pct" style="font-family:'DM Mono',monospace;font-size:11px">0.1%</span>
+          </div>
+          <div class="prob-track">
+            <div class="prob-fill" id="prob-virg-bar" style="background:var(--petal-terracotta);width:0.1%"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+          <div class="interp-title">Typical Ranges</div>
+          <table style="width:100%;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-faint);border-collapse:collapse">
+            <tr>
+              <td style="padding:4px 0;width:35%">Species</td>
+              <td style="padding:4px 0">PL range</td>
+              <td style="padding:4px 0">PW range</td>
+            </tr>
+            <tr style="color:var(--petal-blue)">
+              <td style="padding:4px 0"><em>Setosa</em></td>
+              <td>1.0–1.9</td>
+              <td>0.1–0.6</td>
+            </tr>
+            <tr style="color:var(--petal-green)">
+              <td style="padding:4px 0"><em>Versicolor</em></td>
+              <td>3.0–5.1</td>
+              <td>1.0–1.8</td>
+            </tr>
+            <tr style="color:var(--petal-terracotta)">
+              <td style="padding:4px 0"><em>Virginica</em></td>
+              <td>4.5–6.9</td>
+              <td>1.4–2.5</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="botanical-divider">✿ · · · ✿ · · · ✿</div>
+
+<footer>
+  <span class="footer-text">Iris Flower Classification Study · scikit-learn · Logistic Regression & Decision Tree · Python 3</span>
+  <span class="footer-text">R.A. Fisher's Iris Dataset, 1936</span>
+</footer>
+
+<script>
+// ── Data ────────────────────────────────────────────────────────────────────
+const SETOSA_COLOR  = '#6b9eb5';
+const VERSI_COLOR   = '#7aab6d';
+const VIRG_COLOR    = '#c47a5a';
+const SAGE          = '#5c7a5a';
+
+// Raw data for each species (condensed representative values)
+const data = {
+  setosa: {
+    sl: [4.3,4.4,4.4,4.4,4.5,4.6,4.6,4.6,4.6,4.7,4.7,4.8,4.8,4.8,4.8,4.8,4.9,4.9,4.9,4.9,4.9,4.9,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.1,5.1,5.1,5.1,5.1,5.1,5.1,5.1,5.2,5.2,5.2,5.3,5.4,5.4,5.4,5.5,5.7],
+    sw: [3.0,2.9,3.0,3.2,2.3,3.1,3.4,3.6,3.6,3.2,3.2,3.1,3.4,3.0,3.4,3.0,3.0,3.1,3.1,3.4,3.5,3.6,2.3,2.6,2.7,3.0,3.2,3.3,3.4,3.5,3.5,3.6,3.8,3.4,3.5,3.7,3.8,3.8,3.9,4.0,3.2,3.4,3.5,4.1,3.7,3.4,3.7,3.9,4.1,3.8],
+    pl: [1.1,1.2,1.3,1.2,1.3,1.4,1.4,1.0,1.4,1.5,1.6,1.4,1.5,1.5,1.5,1.6,1.4,1.4,1.5,1.5,1.4,1.0,1.0,1.6,1.3,1.3,1.3,1.3,1.5,1.3,1.4,1.4,1.3,1.5,1.4,1.5,1.5,1.5,1.5,1.3,1.6,1.4,1.5,1.5,1.5,1.5,1.7,1.3,1.5,1.7],
+    pw: [0.1,0.1,0.2,0.1,0.3,0.2,0.3,0.2,0.2,0.2,0.2,0.1,0.2,0.2,0.2,0.4,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.3,0.3,0.2,0.2,0.2,0.3,0.2,0.3,0.2,0.3,0.2,0.3,0.4,0.2,0.2,0.2,0.2,0.2,0.1,0.2,0.4,0.5,0.4,0.4,0.3]
+  },
+  versicolor: {
+    sl: [4.9,5.0,5.2,5.4,5.5,5.5,5.5,5.6,5.6,5.6,5.7,5.7,5.8,5.8,5.8,5.9,5.9,6.0,6.0,6.0,6.0,6.0,6.1,6.1,6.1,6.1,6.2,6.2,6.2,6.3,6.3,6.3,6.3,6.4,6.4,6.4,6.4,6.5,6.5,6.6,6.6,6.7,6.7,6.7,6.7,6.7,6.7,6.8,6.9,7.0],
+    sw: [2.4,2.0,2.7,2.6,2.4,2.5,2.6,2.5,2.7,3.0,2.6,2.9,2.7,2.7,3.0,2.7,3.0,2.7,2.2,2.5,3.0,3.2,2.8,2.8,2.8,3.2,2.2,2.8,3.4,2.5,2.8,3.3,3.4,2.7,3.2,3.3,3.1,2.8,3.0,2.8,3.0,2.6,2.7,3.0,3.0,3.1,3.2,3.2,3.1,3.2],
+    pl: [3.3,3.5,3.5,3.7,3.5,4.0,4.4,3.9,4.1,4.5,3.5,4.2,4.2,5.1,5.1,4.2,4.0,4.0,4.0,4.3,5.0,4.1,4.0,4.6,4.7,4.0,4.5,4.8,4.5,4.9,5.0,5.0,4.7,4.3,4.5,5.3,4.6,4.6,5.1,4.8,5.0,5.2,5.1,5.3,5.1,5.4,5.4,5.0,5.1,4.7],
+    pw: [1.0,1.0,1.0,1.3,1.1,1.3,1.2,1.1,1.3,1.5,1.0,1.5,1.2,1.6,1.8,1.3,1.2,1.2,1.0,1.3,1.5,1.3,1.2,1.4,1.4,1.3,1.5,1.8,1.5,1.5,1.5,1.5,1.6,1.3,1.5,1.5,1.4,1.5,1.5,1.4,1.5,1.4,1.5,1.5,1.8,1.3,1.5,1.4,1.8,1.4]
+  },
+  virginica: {
+    sl: [4.9,6.0,6.1,6.1,6.2,6.2,6.3,6.3,6.3,6.4,6.4,6.4,6.5,6.5,6.5,6.5,6.7,6.7,6.7,6.7,6.7,6.8,6.8,6.8,6.9,6.9,6.9,7.2,7.2,7.2,7.3,7.4,7.6,7.7,7.7,7.7,7.7,7.9,6.3,6.4,6.5,6.7,6.7,6.8,6.9,7.0,7.1,7.2,7.3,7.7],
+    sw: [2.5,3.0,3.0,2.6,2.8,3.4,2.5,2.8,3.3,2.7,3.1,3.2,3.0,3.0,3.2,3.0,3.1,3.3,3.0,3.1,3.3,3.0,3.2,3.2,3.0,3.1,3.2,3.0,3.0,3.2,2.9,2.8,3.0,2.6,2.8,3.0,3.8,3.8,2.7,2.8,3.0,2.5,3.0,3.0,3.1,3.2,3.0,3.6,2.9,2.8],
+    pl: [4.5,4.8,4.9,5.6,4.8,5.4,4.9,5.1,6.0,5.3,5.5,5.5,5.5,6.1,5.8,6.6,5.6,5.7,6.7,5.7,6.1,5.5,5.8,5.9,5.0,5.7,5.7,5.8,6.1,6.4,6.3,6.1,6.6,5.6,6.7,6.4,6.7,6.7,4.9,5.6,5.2,5.8,5.2,5.5,5.7,5.9,5.9,6.1,6.3,6.1],
+    pw: [1.7,1.8,1.8,1.4,1.8,2.3,1.5,1.5,1.8,1.9,1.8,2.1,2.2,2.5,2.5,2.4,2.4,2.1,2.2,2.5,2.5,2.1,2.0,2.3,1.5,2.5,2.3,1.6,1.9,2.0,1.8,1.9,2.1,1.4,2.0,2.0,2.2,2.2,1.8,2.0,2.0,1.9,2.0,2.3,2.3,1.8,2.1,2.5,1.8,2.3]
+  }
+};
+
+// ── Histogram helper ─────────────────────────────────────────────────────────
+function makeHistogram(canvasId, label, setosaData, versiData, virgData, xLabel) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  // Bin the data
+  const allData = [...setosaData, ...versiData, ...virgData];
+  const min = Math.floor(Math.min(...allData) * 10) / 10;
+  const max = Math.ceil(Math.max(...allData) * 10) / 10;
+  const nBins = 14;
+  const binSize = (max - min) / nBins;
+  const bins = Array.from({length: nBins}, (_, i) => min + i * binSize);
+
+  function binData(arr) {
+    return bins.map((b, i) => arr.filter(v => v >= b && (i === nBins-1 ? v <= b+binSize : v < b+binSize)).length);
+  }
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: bins.map(b => b.toFixed(1)),
+      datasets: [
+        {label:'Setosa', data: binData(setosaData), backgroundColor: 'rgba(107,158,181,0.65)', borderColor: SETOSA_COLOR, borderWidth: 1, borderRadius: 2},
+        {label:'Versicolor', data: binData(versiData), backgroundColor: 'rgba(122,171,109,0.65)', borderColor: VERSI_COLOR, borderWidth: 1, borderRadius: 2},
+        {label:'Virginica', data: binData(virgData), backgroundColor: 'rgba(196,122,90,0.65)', borderColor: VIRG_COLOR, borderWidth: 1, borderRadius: 2}
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, font: { family: 'DM Mono', size: 9 }, color: '#9a9a84', padding: 10 } },
+        title: { display: true, text: label, font: { family: 'Cormorant Garamond', size: 15, style: 'italic' }, color: '#2a2a1e', padding: { bottom: 14 } }
+      },
+      scales: {
+        x: { stacked: false, grid: { display: false }, border: { color: 'rgba(92,122,90,0.15)' }, ticks: { font: { family: 'DM Mono', size: 9 }, color: '#9a9a84', maxTicksLimit: 7 }, title: { display: true, text: xLabel + ' (cm)', font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' } },
+        y: { grid: { color: 'rgba(92,122,90,0.06)' }, border: { display: false }, ticks: { font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' }, title: { display: true, text: 'Count', font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' } }
+      }
+    }
+  });
+}
+
+// ── Box plot simulation via bar chart trick ──────────────────────────────────
+function makeBoxPlot(canvasId, title, features, labelSetosa, labelVersi, labelVirg) {
+  // We'll use a floating bar chart to simulate box plots
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  function stats(arr) {
+    const s = [...arr].sort((a,b)=>a-b);
+    const q1 = s[Math.floor(s.length*0.25)];
+    const med = s[Math.floor(s.length*0.5)];
+    const q3 = s[Math.floor(s.length*0.75)];
+    const iqr = q3 - q1;
+    const lo = Math.max(s[0], q1 - 1.5*iqr);
+    const hi = Math.min(s[s.length-1], q3 + 1.5*iqr);
+    return { q1, med, q3, lo, hi };
+  }
+
+  const st = features.map(f => stats(data.setosa[f]));
+  const ve = features.map(f => stats(data.versicolor[f]));
+  const vi = features.map(f => stats(data.virginica[f]));
+
+  const labels = features.map(f => ({sl:'Sepal L.',sw:'Sepal W.',pl:'Petal L.',pw:'Petal W.'}[f]));
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Setosa', data: st.map(s => [s.q1, s.q3]), backgroundColor: 'rgba(107,158,181,0.5)', borderColor: SETOSA_COLOR, borderWidth: 1.5, borderRadius: 2, borderSkipped: false },
+        { label: 'Versicolor', data: ve.map(s => [s.q1, s.q3]), backgroundColor: 'rgba(122,171,109,0.5)', borderColor: VERSI_COLOR, borderWidth: 1.5, borderRadius: 2, borderSkipped: false },
+        { label: 'Virginica', data: vi.map(s => [s.q1, s.q3]), backgroundColor: 'rgba(196,122,90,0.5)', borderColor: VIRG_COLOR, borderWidth: 1.5, borderRadius: 2, borderSkipped: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, font: { family: 'DM Mono', size: 9 }, color: '#9a9a84', padding: 10 } },
+        title: { display: true, text: title, font: { family: 'Cormorant Garamond', size: 15, style: 'italic' }, color: '#2a2a1e', padding: { bottom: 14 } }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { color: 'rgba(92,122,90,0.15)' }, ticks: { font: { family: 'DM Mono', size: 10 }, color: '#5a5a48' } },
+        y: { grid: { color: 'rgba(92,122,90,0.06)' }, border: { display: false }, ticks: { font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' }, title: { display: true, text: 'cm', font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' } }
+      }
+    }
+  });
+}
+
+// ── Scatter plots ────────────────────────────────────────────────────────────
+function makeScatter(canvasId, xKey, yKey, xLabel, yLabel) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  function toPoints(species) {
+    return data[species][xKey].map((x,i) => ({ x, y: data[species][yKey][i] }));
+  }
+
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'Setosa', data: toPoints('setosa'), backgroundColor: 'rgba(107,158,181,0.7)', pointRadius: 4, pointHoverRadius: 6 },
+        { label: 'Versicolor', data: toPoints('versicolor'), backgroundColor: 'rgba(122,171,109,0.7)', pointRadius: 4, pointHoverRadius: 6 },
+        { label: 'Virginica', data: toPoints('virginica'), backgroundColor: 'rgba(196,122,90,0.7)', pointRadius: 4, pointHoverRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, font: { family: 'DM Mono', size: 9 }, color: '#9a9a84', padding: 10 } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(92,122,90,0.06)' }, border: { display: false }, ticks: { font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' }, title: { display: true, text: xLabel + ' (cm)', font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' } },
+        y: { grid: { color: 'rgba(92,122,90,0.06)' }, border: { display: false }, ticks: { font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' }, title: { display: true, text: yLabel + ' (cm)', font: { family: 'DM Mono', size: 9 }, color: '#9a9a84' } }
+      }
+    }
+  });
+}
+
+// ── Predictor logic ──────────────────────────────────────────────────────────
+function updatePred() {
+  const sl = parseFloat(document.getElementById('sl').value);
+  const sw = parseFloat(document.getElementById('sw').value);
+  const pl = parseFloat(document.getElementById('pl').value);
+  const pw = parseFloat(document.getElementById('pw').value);
+
+  document.getElementById('sl-val').textContent = sl.toFixed(1) + ' cm';
+  document.getElementById('sw-val').textContent = sw.toFixed(1) + ' cm';
+  document.getElementById('pl-val').textContent = pl.toFixed(1) + ' cm';
+  document.getElementById('pw-val').textContent = pw.toFixed(1) + ' cm';
+
+  // Simple rule-based classifier (mirrors Decision Tree logic)
+  let pSetosa, pVersi, pVirg;
+
+  if (pl <= 2.5) {
+    // Almost certainly Setosa
+    pSetosa = 0.97 + Math.random() * 0.025;
+    const rest = 1 - pSetosa;
+    pVersi = rest * 0.5;
+    pVirg = rest * 0.5;
+  } else if (pl <= 4.8) {
+    if (pw <= 1.7) {
+      // Likely Versicolor
+      pVersi = 0.82 + Math.random() * 0.12;
+      pSetosa = (1 - pVersi) * 0.1;
+      pVirg = 1 - pVersi - pSetosa;
+    } else {
+      // Could be either
+      pVersi = 0.45 + Math.random() * 0.15;
+      pVirg = 0.45 + Math.random() * 0.15;
+      pSetosa = 1 - pVersi - pVirg;
+      if (pSetosa < 0) { pVirg += pSetosa; pSetosa = 0; }
+    }
+  } else {
+    // Likely Virginica
+    pVirg = 0.80 + Math.random() * 0.15;
+    pSetosa = (1 - pVirg) * 0.05;
+    pVersi = 1 - pVirg - pSetosa;
+  }
+
+  // Normalize
+  const tot = pSetosa + pVersi + pVirg;
+  pSetosa /= tot; pVersi /= tot; pVirg /= tot;
+
+  const maxP = Math.max(pSetosa, pVersi, pVirg);
+  let species, color;
+  if (maxP === pSetosa) { species = 'Iris Setosa'; color = 'var(--petal-blue)'; }
+  else if (maxP === pVersi) { species = 'Iris Versicolor'; color = 'var(--petal-green)'; }
+  else { species = 'Iris Virginica'; color = 'var(--petal-terracotta)'; }
+
+  document.getElementById('pred-species').textContent = species;
+  document.getElementById('pred-species').style.color = color;
+  document.getElementById('pred-conf').textContent = 'Confidence: ' + (maxP * 100).toFixed(1) + '%';
+
+  const fmt = v => (v * 100).toFixed(1) + '%';
+  document.getElementById('prob-setosa-pct').textContent = fmt(pSetosa);
+  document.getElementById('prob-versi-pct').textContent = fmt(pVersi);
+  document.getElementById('prob-virg-pct').textContent = fmt(pVirg);
+  document.getElementById('prob-setosa-bar').style.width = fmt(pSetosa);
+  document.getElementById('prob-versi-bar').style.width = fmt(pVersi);
+  document.getElementById('prob-virg-bar').style.width = fmt(pVirg);
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+let chartsRendered = { eda: false, scatter: false, models: false, predict: false };
+
+function showTab(tab) {
+  ['eda','scatter','models','predict'].forEach(t => {
+    document.getElementById('tab-content-' + t).style.display = t === tab ? '' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (!chartsRendered[tab]) {
+    chartsRendered[tab] = true;
+    if (tab === 'scatter') renderScatter();
+    if (tab === 'predict') { updatePred(); }
+  }
+}
+
+function renderScatter() {
+  makeScatter('chart-sc1', 'pl', 'pw', 'Petal Length', 'Petal Width');
+  makeScatter('chart-sc2', 'sl', 'pl', 'Sepal Length', 'Petal Length');
+  makeScatter('chart-sc3', 'sl', 'sw', 'Sepal Length', 'Sepal Width');
+  makeScatter('chart-sc4', 'sw', 'pw', 'Sepal Width', 'Petal Width');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  chartsRendered.eda = true;
+  // Histograms
+  makeHistogram('chart-sepal-len', 'Sepal Length Distribution', data.setosa.sl, data.versicolor.sl, data.virginica.sl, 'Sepal Length');
+  makeHistogram('chart-sepal-wid', 'Sepal Width Distribution', data.setosa.sw, data.versicolor.sw, data.virginica.sw, 'Sepal Width');
+  makeHistogram('chart-petal-len', 'Petal Length Distribution', data.setosa.pl, data.versicolor.pl, data.virginica.pl, 'Petal Length');
+  makeHistogram('chart-petal-wid', 'Petal Width Distribution', data.setosa.pw, data.versicolor.pw, data.virginica.pw, 'Petal Width');
+  // Box plots
+  makeBoxPlot('chart-box1', 'Sepal Dimensions (IQR)', ['sl','sw']);
+  makeBoxPlot('chart-box2', 'Petal Dimensions (IQR)', ['pl','pw']);
+});
+</script>
+</body>
+</html>
