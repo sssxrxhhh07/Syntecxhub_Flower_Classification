@@ -174,7 +174,7 @@ Users can adjust flower measurements and generate species predictions in real ti
  Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/iris-flower-classification-dashboard.git
+git clone https://github.com/sssxrxhhh07/iris-flower-classification-dashboard.git
 
 cd iris-flower-classification-dashboard
 ```
